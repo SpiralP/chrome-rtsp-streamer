@@ -1,0 +1,17 @@
+{
+  "scripts": {
+    "start": "ts-node --transpile-only ./src/index.ts"
+  },
+  "dependencies": {
+    "@cypress/xvfb": "^1.2.4",
+    "bluebird": "^3.7.2",
+    "ffmpeg-static": "^4.4.0",
+    "puppeteer": "^10.1.0",
+    "ts-node": "^10.1.0"
+  },
+  "devDependencies": {
+    "@types/bluebird": "^3.5.36",
+    "@types/ffmpeg-static": "^3.0.0",
+    "typescript": "^4.3.5"
+  }
+}
