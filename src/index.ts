@@ -4,6 +4,19 @@ import execa from "execa";
 import ffmpegPath from "ffmpeg-static";
 import puppeteer from "puppeteer";
 
+const args = process.argv.slice(2);
+const addr = args[0] || process.env.RTSP_ADDRESS;
+if (!addr) throw new Error("need to specify rtsp address");
+
+const xvfb = Promise.promisifyAll(
+  new Xvfb({
+    xvfb_args: ["-screen", "0", "1920x1080x24", "-ac"],
+    onStderrData(data) {
+      console.warn(data.toString());
+    },
+  })
+);
+
 export const commonOptions: string[] = [
   "-hide_banner",
   "-loglevel",
@@ -12,19 +25,6 @@ export const commonOptions: string[] = [
 ];
 
 (async () => {
-  const args = process.argv.slice(2);
-  const addr = args[0];
-  if (!addr) throw new Error("need to specify address");
-
-  const xvfb = Promise.promisifyAll(
-    new Xvfb({
-      xvfb_args: ["-screen", "0", "1920x1080x24", "-ac"],
-      onStderrData(data) {
-        console.warn(data.toString());
-      },
-    })
-  );
-
   console.log("xvfb.start");
   await xvfb.startAsync();
 
