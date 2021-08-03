@@ -1,7 +1,7 @@
 import Xvfb from "@cypress/xvfb";
 import { Promise } from "bluebird";
-import { spawn } from "child_process";
-import ffmpeg from "ffmpeg-static";
+import execa from "execa";
+import ffmpegPath from "ffmpeg-static";
 import puppeteer from "puppeteer";
 
 export const commonOptions: string[] = [
@@ -32,16 +32,12 @@ export const commonOptions: string[] = [
   console.log(`display: ${display}`);
 
   console.log("spawn awesome");
-  const awesome_cmd = spawn("awesome", {
+  const awesome = execa("awesome", {
     env: {
       DISPLAY: display,
       HOME: "/home/user",
     },
     stdio: ["ignore", "inherit", "inherit"],
-  });
-  const awesome_cmd_exit = new Promise((resolve, reject) => {
-    awesome_cmd.on("close", resolve);
-    awesome_cmd.on("error", reject);
   });
 
   console.log("puppeteer.launch");
@@ -61,45 +57,47 @@ export const commonOptions: string[] = [
   const page = await browser.newPage();
 
   console.log("page.goto");
-  await page.goto("https://1.1.1.1"); // https://soundcloud.com/moretinmusic/unholy-20202020
+  await page.goto("https://soundcloud.com/moretinmusic/unholy-20202020");
 
   console.log(`spawn ffmpeg for ${addr}`);
-  const ffmpeg_cmd = spawn(
-    ffmpeg,
-    [
-      ...commonOptions,
-      "-r",
-      "30",
-      "-f",
-      "x11grab",
-      "-draw_mouse",
-      "0",
-      "-s",
-      "1920x1080",
-      "-i",
-      display,
-      "-vcodec",
-      "libx264",
-      "-pix_fmt",
-      "yuv420p",
-      "-acodec",
-      "aac",
-      "-f",
-      "rtsp",
-      addr,
-    ],
-    {
-      stdio: ["ignore", "inherit", "inherit"],
-    }
-  );
-  await new Promise((resolve, reject) => {
-    ffmpeg_cmd.on("close", resolve);
-    ffmpeg_cmd.on("error", reject);
+  const ffmpegArgs = [
+    ...commonOptions,
+    "-r",
+    "30",
+    "-f",
+    "x11grab",
+    "-draw_mouse",
+    "0",
+    "-s",
+    "1920x1080",
+    "-i",
+    display,
+    "-vcodec",
+    "libx264",
+    "-pix_fmt",
+    "yuv420p",
+    "-acodec",
+    "aac",
+    "-f",
+    "rtsp",
+    "-rtsp_transport",
+    "tcp",
+    addr,
+  ];
+  console.log(`"${ffmpegArgs.join('" "')}"`);
+  const ffmpeg = execa(ffmpegPath, ffmpegArgs, {
+    stdio: ["ignore", "inherit", "inherit"],
   });
+  await ffmpeg;
+
   console.log("ffmpeg exited");
 
-  awesome_cmd.kill();
-  await awesome_cmd_exit;
+  awesome.kill("SIGTERM", {
+    forceKillAfterTimeout: 3000,
+  });
+  try {
+    await awesome;
+  } catch {}
 
   // console.log("sleeping");
   // await new Promise((resolve) => setTimeout(resolve, 60000));
