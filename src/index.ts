@@ -1,12 +1,13 @@
 import Xvfb from "@cypress/xvfb";
 import { Promise } from "bluebird";
 import execa from "execa";
-import ffmpegPath from "ffmpeg-static";
 import puppeteer from "puppeteer";
 
 const args = process.argv.slice(2);
 const addr = args[0] || process.env.RTSP_ADDRESS;
 if (!addr) throw new Error("need to specify rtsp address");
+const initialUrl = args[1];
+if (!initialUrl) throw new Error("need to specify url");
 
 const xvfb = Promise.promisifyAll(
   new Xvfb({
@@ -57,7 +58,7 @@ export const commonOptions: string[] = [
   const page = await browser.newPage();
 
   console.log("page.goto");
-  await page.goto("https://soundcloud.com/moretinmusic/unholy-20202020");
+  await page.goto(initialUrl);
 
   console.log(`spawn ffmpeg for ${addr}`);
   const ffmpegArgs = [
@@ -72,6 +73,10 @@ export const commonOptions: string[] = [
     "1920x1080",
     "-i",
     display,
+    "-f",
+    "alsa",
+    "-i",
+    "default",
     "-vcodec",
     "libx264",
     "-pix_fmt",
@@ -85,7 +90,7 @@ export const commonOptions: string[] = [
     addr,
   ];
   console.log(`"${ffmpegArgs.join('" "')}"`);
-  const ffmpeg = execa(ffmpegPath, ffmpegArgs, {
+  const ffmpeg = execa("ffmpeg", ffmpegArgs, {
     stdio: ["ignore", "inherit", "inherit"],
   });
   await ffmpeg;
