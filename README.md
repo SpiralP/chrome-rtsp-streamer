@@ -15,3 +15,10 @@ docker run --rm -it chrome-rtsp-streamer rtsp://10.0.0.2:8554/stream https://www
 # on a client, pay the stream
 ffplay -rtsp_transport tcp rtsp://10.0.0.2:8554/stream
 ```
+
+### References
+
+- https://github.com/suchipi/spotify-player
+- https://github.com/suchipi/discord-spotify-bot
+- https://github.com/vkanduri/avcapture
+- https://stackoverflow.com/a/43368617/2780398
