@@ -18,19 +18,75 @@ const xvfb = Promise.promisifyAll(
   })
 );
 
-export const commonOptions: string[] = [
-  "-hide_banner",
-  "-loglevel",
-  "warning",
-  "-stats",
-];
-
 (async () => {
   console.log("xvfb.start");
   await xvfb.startAsync();
 
   const display = xvfb.display();
   console.log(`display: ${display}`);
+
+  // Stream #0:0 -> #0:0 (rawvideo (native) -> h264 (libx264))
+  // Stream #1:0 -> #0:1 (pcm_s16le (native) -> aac (native))
+  console.log(`spawn ffmpeg for ${addr}`);
+  const ffmpegArgs = [
+    "-hide_banner",
+    "-loglevel",
+    "warning",
+    "-stats",
+    "-probesize",
+    "32M",
+
+    // video input
+    "-f",
+    "x11grab",
+    "-r",
+    "30",
+    "-draw_mouse",
+    "0",
+    "-s",
+    "1920x1080",
+    "-i",
+    display,
+
+    // audio input
+    "-f",
+    "alsa",
+
+    // fixes warnings but choppy audio!!
+    // "-use_wallclock_as_timestamps",
+    // "1",
+    "-ac",
+    "2",
+    "-channel_layout",
+    "stereo",
+    "-i",
+    "default",
+
+    // video output
+    "-c:v",
+    "libx264",
+    "-pix_fmt",
+    "yuv420p",
+    "-g",
+    "60",
+    "-keyint_min",
+    "60",
+
+    // audio output
+    "-c:a",
+    "aac",
+
+    //
+    "-f",
+    "rtsp",
+    "-rtsp_transport",
+    "tcp",
+    addr,
+  ];
+  console.log(`"${ffmpegArgs.join('" "')}"`);
+  const ffmpeg = execa("ffmpeg", ffmpegArgs, {
+    stdio: ["ignore", "inherit", "inherit"],
+  });
 
   console.log("spawn awesome");
   const awesome = execa("awesome", {
@@ -48,10 +104,12 @@ export const commonOptions: string[] = [
     args: [
       "--no-sandbox",
       "--disable-gpu",
-      "--start-maximized",
+      "--start-fullscreen",
       "--display=" + display,
       "--autoplay-policy=no-user-gesture-required",
     ],
+    // removes infobars
+    ignoreDefaultArgs: ["--enable-automation"],
   });
 
   console.log("browser.newPage");
@@ -60,39 +118,6 @@ export const commonOptions: string[] = [
   console.log("page.goto");
   await page.goto(initialUrl);
 
-  console.log(`spawn ffmpeg for ${addr}`);
-  const ffmpegArgs = [
-    ...commonOptions,
-    "-r",
-    "30",
-    "-f",
-    "x11grab",
-    "-draw_mouse",
-    "0",
-    "-s",
-    "1920x1080",
-    "-i",
-    display,
-    "-f",
-    "alsa",
-    "-i",
-    "default",
-    "-vcodec",
-    "libx264",
-    "-pix_fmt",
-    "yuv420p",
-    "-acodec",
-    "aac",
-    "-f",
-    "rtsp",
-    "-rtsp_transport",
-    "tcp",
-    addr,
-  ];
-  console.log(`"${ffmpegArgs.join('" "')}"`);
-  const ffmpeg = execa("ffmpeg", ffmpegArgs, {
-    stdio: ["ignore", "inherit", "inherit"],
-  });
   await ffmpeg;
 
   console.log("ffmpeg exited");

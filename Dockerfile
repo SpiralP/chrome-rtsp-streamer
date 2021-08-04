@@ -1,7 +1,6 @@
 FROM node
 
-RUN apt-get -y update
-RUN apt-get -y install \
+RUN apt-get -y update && apt-get -y install \
     xvfb \
     udev \
     fonts-freefont-ttf \
